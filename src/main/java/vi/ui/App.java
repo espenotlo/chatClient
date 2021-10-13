@@ -5,15 +5,18 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import vi.logic.TcpClient;
 
 import java.io.IOException;
 
 public class App extends Application {
 
     private static Scene scene;
+    private TcpClient tcpClient;
 
     @Override
     public void start(Stage stage) throws IOException {
+        this.tcpClient = new TcpClient("datakomm.work", 1301);
         scene = new Scene(loadFxml("login"));
         stage.setScene(scene);
         stage.setTitle("Chat Client");
