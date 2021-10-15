@@ -1,8 +1,7 @@
-module chatClient {
-    requires javafx.fxml;
-    requires javafx.controls;
+module no.ntnu.datakomm.chat {
+  requires javafx.controls;
+  requires javafx.fxml;
 
-    opens vi.ui to javafx.fxml;
-
-    exports vi.ui;
+  opens no.ntnu.datakomm.chat to javafx.fxml;
+  exports no.ntnu.datakomm.chat;
 }
