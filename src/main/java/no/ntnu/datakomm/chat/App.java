@@ -29,9 +29,9 @@ public class App extends Application {
      */
     @Override
     public void start(Stage primaryStage) {
-        URL fxmlUrl = getClass().getResource("/layout.fxml");
-        URL cssUrl = getClass().getResource("/style.css");
-        URL iconUrl = getClass().getResource("/ntnu.png");
+        URL fxmlUrl = getClass().getResource("layout.fxml");
+        URL cssUrl = getClass().getResource("styles/style.css");
+        URL iconUrl = getClass().getResource("styles/ntnu.png");
         Parent root = null;
         boolean loaded = false;
         if (fxmlUrl != null && cssUrl != null && iconUrl != null) {
