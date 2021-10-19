@@ -132,8 +132,10 @@ public class GUIController implements ChatListener {
                     String recipient = msgParts[1];
                     String message = msgParts[2];
                     tcpClient.sendPrivateMessage(recipient, message);
-                } else {
+                } else if (msgParts[0].equals("msg")){
                     tcpClient.sendPublicMessage(msgToSend);
+                } else if (msgParts[0].equals("inbox")){
+                    tcpClient.sendInboxRequest();
                 }
                 msg = new TextMessage("", false, msgToSend);
             } else {

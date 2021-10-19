@@ -10,8 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class TCPClient {
     private PrintWriter toServer;
@@ -124,7 +122,7 @@ public class TCPClient {
      * Send a request for latest user list to the server. To get the new users,
      * clear your current user list and use events in the listener.
      */
-    public String[] refreshUserList() {
+    public void refreshUserList() {
         String[] users = null;
         if(isConnectionActive()) {
             this.toServer.println("users");
@@ -142,8 +140,6 @@ public class TCPClient {
                    e.printStackTrace();
             }
         }
-
-        return users;
     }
 
     /**
@@ -157,6 +153,9 @@ public class TCPClient {
         return sendCommand("privmsg " + recipient + " " + message);
     }
 
+    public void sendInboxRequest() {
+        this.toServer.println("inbox");
+    }
 
     /**
      * Send a request for the list of commands that server supports.
@@ -240,6 +239,10 @@ public class TCPClient {
                         break;
                     case "privmsg":
                         onMsgReceived(true, commands[1], parseMessage(commands));
+                        break;
+
+                    case "inbox":
+                        //do nothing
                         break;
                     case "msgok" :
                         //do nothing
