@@ -220,8 +220,7 @@ public class TCPClient {
                         break;
 
                     case "inbox":
-                        //TODO: implement inbox response
-                        //do nothing
+                        onMsgReceived(false,"",parseCommand(commands));
                         break;
                     case "msgok" :
                         //do nothing
@@ -268,11 +267,10 @@ public class TCPClient {
         return sb.toString().trim();
     }
 
-
     /**
      * Register a new listener for events (login result, incoming message, etc)
      *
-     * @param listener
+     * @param listener the listener to be registered.
      */
     public void addListener(ChatListener listener) {
         if (!listeners.contains(listener)) {
@@ -283,7 +281,7 @@ public class TCPClient {
     /**
      * Unregister an event listener
      *
-     * @param listener
+     * @param listener the listener to be removed.
      */
     public void removeListener(ChatListener listener) {
         listeners.remove(listener);
