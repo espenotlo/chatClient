@@ -6,10 +6,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class TCPClient {
     private PrintWriter toServer;
@@ -123,21 +120,20 @@ public class TCPClient {
      * clear your current user list and use events in the listener.
      */
     public void refreshUserList() {
-        String[] users = null;
         if(isConnectionActive()) {
             this.toServer.println("users");
-            String line;
-            ArrayList<String> userlist = new ArrayList<>();
+            List<String> userlist;
             try {
-                while (this.fromServer.ready() && (line = this.fromServer.readLine()) != null) {
-                    userlist.add(line);
+                if (this.fromServer.ready()) {
+                    userlist = Arrays.asList(this.fromServer.readLine().split(" "));
+                    userlist.remove(0);
+
+                    for (ChatListener chatListener : this.listeners) {
+                        chatListener.onUserList(userlist.toArray(String[]::new));
                     }
-                users = userlist.toArray(String[]::new);
-                for (ChatListener chatListener : this.listeners) {
-                    chatListener.onUserList(users);
                 }
             } catch (IOException e) {
-                   e.printStackTrace();
+                e.printStackTrace();
             }
         }
     }
@@ -153,27 +149,17 @@ public class TCPClient {
         return sendCommand("privmsg " + recipient + " " + message);
     }
 
-    public void sendInboxRequest() {
-        this.toServer.println("inbox");
+    public void sendRequest(String request) {
+        this.toServer.println(request);
     }
 
     /**
      * Send a request for the list of commands that server supports.
      */
-    public String askSupportedCommands() {
-        String line = null;
+    public void askSupportedCommands() {
         if(isConnectionActive()) {
             this.toServer.println("help");
-            try {
-                if (this.fromServer.ready()) {
-                    line = this.fromServer.readLine();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
-
-        return line;
     }
 
 
@@ -185,15 +171,13 @@ public class TCPClient {
     private String waitServerResponse() {
         String serverResponse = null;
 
-        if (!connection.isClosed()) {
-            if (isConnectionActive()) {
-                try {
-                    serverResponse = this.fromServer.readLine();
-                } catch (SocketException e) {
-                    disconnect();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        if (isConnectionActive() && !connection.isClosed()) {
+            try {
+                serverResponse = this.fromServer.readLine();
+            } catch (SocketException e) {
+                disconnect();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
 
@@ -206,11 +190,7 @@ public class TCPClient {
      * @return Error message or "" if there has been no error
      */
     public String getLastError() {
-        if (lastError != null) {
-            return lastError;
-        } else {
-            return "";
-        }
+        return Objects.requireNonNullElse(lastError, "");
     }
 
     /**
@@ -218,9 +198,7 @@ public class TCPClient {
      */
     public void startListenThread() {
         // Call parseIncomingCommands() in the new thread.
-        Thread t = new Thread(() -> {
-            parseIncomingCommands();
-        });
+        Thread t = new Thread(this::parseIncomingCommands);
         t.start();
     }
 
@@ -235,13 +213,14 @@ public class TCPClient {
                 String[] commands = serverResponse.split(" ");
                 switch (commands[0]) {
                     case "msg":
-                        onMsgReceived(false, commands[1], parseMessage(commands));
+                        onMsgReceived(false, commands[1], parseCommand(commands));
                         break;
                     case "privmsg":
-                        onMsgReceived(true, commands[1], parseMessage(commands));
+                        onMsgReceived(true, commands[1], parseCommand(commands));
                         break;
 
                     case "inbox":
+                        //TODO: implement inbox response
                         //do nothing
                         break;
                     case "msgok" :
@@ -249,9 +228,6 @@ public class TCPClient {
                         break;
                     case "msgerr":
                         onMsgError(parseCommand(commands));
-                        break;
-                    case "cmderr":
-                        onCmdError(parseCommand(commands));
                         break;
                     case "loginok":
                         onLoginResult(true, "");
@@ -265,29 +241,12 @@ public class TCPClient {
                     case "users":
                         onUsersList(parseCommand(commands).split(" "));
                         break;
+                    case "cmderr":
                     default:
-                        break;
+                        onCmdError(parseCommand(commands));
                 }
             }
         }
-    }
-
-    /**
-     * Extracts the message text from an incoming message command.
-     *
-     * @param array the incoming message request
-     * @return {@code String} message text
-     */
-    private String parseMessage(String[] array) {
-        //List<String> strings = Arrays.asList(array);
-        //strings.remove(0);
-        //strings.remove(0);
-        List<String> strings = new LinkedList<>(Arrays.asList(array));
-        strings.remove(0);
-        strings.remove(0);
-        StringBuilder sb = new StringBuilder();
-        strings.forEach(sb::append);
-        return sb.toString();
     }
 
     /**
@@ -297,12 +256,13 @@ public class TCPClient {
      * @return {@code String} command text
      */
     private String parseCommand(String[] array) {
-        //Could not parse users with this type of list.
-        //List<String> strings = Arrays.asList(array);
-        //strings.remove(0);
-
-        List<String> strings = new LinkedList<String>(Arrays.asList(array));
-        strings.remove(0);
+        List<String> strings = new LinkedList<>(Arrays.asList(array));
+        if (strings.get(0).equals("privmsg") || strings.get(0).equals("msg")) {
+            strings.remove(0);
+            strings.remove(0);
+        } else {
+            strings.remove(0);
+        }
         StringBuilder sb = new StringBuilder();
         strings.forEach(s -> sb.append(s).append(" "));
         return sb.toString().trim();

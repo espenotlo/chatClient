@@ -10,6 +10,8 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import java.util.Arrays;
+
 import static java.lang.Thread.sleep;
 
 /**
@@ -104,8 +106,8 @@ public class GUIController implements ChatListener {
                 textInput.end();
             } else if (event.getCode().equals(KeyCode.ENTER)) {
                 // When "Enter" is pressed in the message input box: submit the message
+                textInput.setText(textInput.getText().strip());
                 inputSubmit();
-                event.consume(); // This is needed to disable beeping sound
             }
         });
         submitBtn.setOnMouseClicked(event -> {
@@ -122,7 +124,7 @@ public class GUIController implements ChatListener {
      */
     private void inputSubmit() {
         String msgToSend = textInput.getText();
-        if (!msgToSend.isEmpty()) {
+        if (!msgToSend.isBlank()) {
             TextMessage msg;
             if (tcpClient.isConnectionActive()) {
                 // Split the message in max 3 parts. If the first one is "/privmsg", then recipient is the second
@@ -134,8 +136,8 @@ public class GUIController implements ChatListener {
                     tcpClient.sendPrivateMessage(recipient, message);
                 } else if (msgParts[0].equals("msg")){
                     tcpClient.sendPublicMessage(msgToSend);
-                } else if (msgParts[0].equals("inbox")){
-                    tcpClient.sendInboxRequest();
+                } else {
+                    tcpClient.sendRequest(msgParts[0]);
                 }
                 msg = new TextMessage("", false, msgToSend);
             } else {
@@ -232,6 +234,7 @@ public class GUIController implements ChatListener {
             }
             updateButtons(connected);
         });
+        connThread.setDaemon(true);
         connThread.start();
     }
 
@@ -306,7 +309,7 @@ public class GUIController implements ChatListener {
                 // EOF polling thread code
                 ////////////////////////////////////////////////////////////////
             });
-
+            userPollThread.setDaemon(true);
             userPollThread.start();
         }
     }
