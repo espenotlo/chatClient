@@ -172,7 +172,7 @@ public class TCPClient {
         // TODO Step 6: Implement this method
         // Hint: Reuse sendCommand() method
         // Hint: update lastError if you want to store the reason for the error.
-        return false;
+        return sendCommand("privmsg " + recipient + " " + message);
     }
 
 
@@ -276,7 +276,6 @@ public class TCPClient {
                         onUsersList(parseCommand(commands).split(" "));
                         break;
                     default:
-                        onCmdError("error: unrecognized command");
                         break;
                 }
             }
@@ -297,7 +296,10 @@ public class TCPClient {
      * @return {@code String} message text
      */
     private String parseMessage(String[] array) {
-        List<String> strings = Arrays.asList(array);
+        //List<String> strings = Arrays.asList(array);
+        //strings.remove(0);
+        //strings.remove(0);
+        List<String> strings = new LinkedList<>(Arrays.asList(array));
         strings.remove(0);
         strings.remove(0);
         StringBuilder sb = new StringBuilder();
