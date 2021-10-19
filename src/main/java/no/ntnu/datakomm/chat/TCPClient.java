@@ -5,10 +5,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class TCPClient {
     private PrintWriter toServer;
@@ -38,6 +41,7 @@ public class TCPClient {
             connected = true;
             this.toServer = new PrintWriter(this.connection.getOutputStream(), true);
             this.fromServer = new BufferedReader(new InputStreamReader(this.connection.getInputStream()));
+            System.out.println("Connected");
         } catch (IOException e) {
             this.lastError = "Could not connect to server";
             System.err.println(this.lastError);
@@ -61,6 +65,7 @@ public class TCPClient {
         if(isConnectionActive()) {
             try {
                 this.connection.close();
+                this.connection = null;
                 onDisconnect();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -108,7 +113,10 @@ public class TCPClient {
         // Hint: update lastError if you want to store the reason for the error.
         boolean messageSent = false;
 
-        messageSent = sendCommand("msg " + message);
+        String[] command = message.split(" ");
+        if(command[0].equals("msg")) {
+            messageSent = sendCommand(message);
+        }
 
         return messageSent;
     }
@@ -128,15 +136,34 @@ public class TCPClient {
      * Send a request for latest user list to the server. To get the new users,
      * clear your current user list and use events in the listener.
      */
-    public void refreshUserList() {
+    public String[] refreshUserList() {
         // TODO Step 5: implement this method
         // Hint: Use Wireshark and the provided chat client reference app to find out what commands the
         // client and server exchange for user listing.
+        String[] users = null;
+        if(isConnectionActive()) {
+            this.toServer.println("users");
+            String line;
+            ArrayList<String> userlist = new ArrayList<>();
+            try {
+                while (this.fromServer.ready() && (line = this.fromServer.readLine()) != null) {
+                    userlist.add(line);
+                    }
+                users = userlist.toArray(String[]::new);
+                for (ChatListener chatListener : this.listeners) {
+                    chatListener.onUserList(users);
+                }
+            } catch (IOException e) {
+                   e.printStackTrace();
+            }
+        }
+
+        return users;
     }
 
     /**
      * Send a private message to a single recipient.
-     *
+     .
      * @param recipient username of the chat user who should receive the message
      * @param message   Message to send
      * @return true if message sent, false on error
@@ -171,6 +198,8 @@ public class TCPClient {
             if (isConnectionActive()) {
                 try {
                     serverResponse = this.fromServer.readLine();
+                } catch (SocketException e) {
+                    disconnect();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -219,16 +248,37 @@ public class TCPClient {
             // Hint: In Step 3 you need to handle only login-related responses.
             // Hint: In Step 3 reuse onLoginResult() method
             String serverResponse = waitServerResponse();
-            String[] commands = serverResponse.split(" ");
-            switch (commands[0]) {
-                case "msg" -> onMsgReceived(false, commands[1], parseMessage(commands));
-                case "privmsg" -> onMsgReceived(true, commands[1], parseMessage(commands));
-                case "msgerr" -> onMsgError(parseCommand(commands));
-                case "cmderr" -> onCmdError(parseCommand(commands));
-                case "loginok" -> onLoginResult(true, "");
-                case "loginerr" -> onLoginResult(false, parseCommand(commands));
-                case "supported" -> onSupported(parseCommand(commands).split(" "));
-                default -> onCmdError("error: unrecognized command");
+            if(serverResponse != null) {
+                String[] commands = serverResponse.split(" ");
+                switch (commands[0]) {
+                    case "msg":
+                        onMsgReceived(false, commands[1], parseMessage(commands));
+                        break;
+                    case "privmsg":
+                        onMsgReceived(true, commands[1], parseMessage(commands));
+                        break;
+                    case "msgerr":
+                        onMsgError(parseCommand(commands));
+                        break;
+                    case "cmderr":
+                        onCmdError(parseCommand(commands));
+                        break;
+                    case "loginok":
+                        onLoginResult(true, "");
+                        break;
+                    case "loginerr":
+                        onLoginResult(false, parseCommand(commands));
+                        break;
+                    case "supported":
+                        onSupported(parseCommand(commands).split(" "));
+                        break;
+                    case "users":
+                        onUsersList(parseCommand(commands).split(" "));
+                        break;
+                    default:
+                        onCmdError("error: unrecognized command");
+                        break;
+                }
             }
 
             // TODO Step 5: update this method, handle user-list response from the server
@@ -262,7 +312,11 @@ public class TCPClient {
      * @return {@code String} command text
      */
     private String parseCommand(String[] array) {
-        List<String> strings = Arrays.asList(array);
+        //Could not parse users with this type of list.
+        //List<String> strings = Arrays.asList(array);
+        //strings.remove(0);
+
+        List<String> strings = new LinkedList<String>(Arrays.asList(array));
         strings.remove(0);
         StringBuilder sb = new StringBuilder();
         strings.forEach(s -> sb.append(s).append(" "));
