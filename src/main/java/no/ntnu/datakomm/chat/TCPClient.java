@@ -31,9 +31,6 @@ public class TCPClient {
      * @return True on success, false otherwise
      */
     public boolean connect(String host, int port) {
-        // TODO Step 1: implement this method
-        // Hint: Remember to process all exceptions and return false on error
-        // Hint: Remember to set up all the necessary input/output stream variables
         boolean connected = false;
 
         try {
@@ -60,8 +57,6 @@ public class TCPClient {
      * that no two threads call this method in parallel.
      */
     public synchronized void disconnect() {
-        // TODO Step 4: implement this method
-        // Hint: remember to check if connection is active
         if(isConnectionActive()) {
             try {
                 this.connection.close();
@@ -87,8 +82,6 @@ public class TCPClient {
      * @return true on success, false otherwise
      */
     private boolean sendCommand(String cmd) {
-        // TODO Step 2: Implement this method
-        // Hint: Remember to check if connection is active
         boolean messageSent = false;
 
         if(isConnectionActive()) {
@@ -108,9 +101,6 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPublicMessage(String message) {
-        // TODO Step 2: implement this method
-        // Hint: Reuse sendCommand() method
-        // Hint: update lastError if you want to store the reason for the error.
         boolean messageSent = false;
 
         String[] command = message.split(" ");
@@ -127,8 +117,6 @@ public class TCPClient {
      * @param username Username to use
      */
     public void tryLogin(String username) {
-        // TODO Step 3: implement this method
-        // Hint: Reuse sendCommand() method
         sendCommand("login " + username);
     }
 
@@ -137,9 +125,6 @@ public class TCPClient {
      * clear your current user list and use events in the listener.
      */
     public String[] refreshUserList() {
-        // TODO Step 5: implement this method
-        // Hint: Use Wireshark and the provided chat client reference app to find out what commands the
-        // client and server exchange for user listing.
         String[] users = null;
         if(isConnectionActive()) {
             this.toServer.println("users");
@@ -169,9 +154,6 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPrivateMessage(String recipient, String message) {
-        // TODO Step 6: Implement this method
-        // Hint: Reuse sendCommand() method
-        // Hint: update lastError if you want to store the reason for the error.
         return sendCommand("privmsg " + recipient + " " + message);
     }
 
@@ -180,8 +162,6 @@ public class TCPClient {
      * Send a request for the list of commands that server supports.
      */
     public String askSupportedCommands() {
-        // TODO Step 8: Implement this method
-        // Hint: Reuse sendCommand() method
         String line = null;
         if(isConnectionActive()) {
             this.toServer.println("help");
@@ -206,7 +186,6 @@ public class TCPClient {
     private String waitServerResponse() {
         String serverResponse = null;
 
-        // TODO Step 3: Implement this method
         if (!connection.isClosed()) {
             if (isConnectionActive()) {
                 try {
@@ -218,8 +197,6 @@ public class TCPClient {
                 }
             }
         }
-        // TODO Step 4: If you get I/O Exception or null from the stream, it means that something has gone wrong
-        // with the stream and hence the socket. Probably a good idea to close the socket in that case.
 
         return serverResponse;
     }
@@ -254,12 +231,6 @@ public class TCPClient {
      */
     private void parseIncomingCommands() {
         while (isConnectionActive()) {
-            // TODO Step 3: Implement this method
-            // Hint: Reuse waitServerResponse() method
-            // Hint: Have a switch-case (or other way) to check what type of response is received from the server
-            // and act on it.
-            // Hint: In Step 3 you need to handle only login-related responses.
-            // Hint: In Step 3 reuse onLoginResult() method
             String serverResponse = waitServerResponse();
             if(serverResponse != null) {
                 String[] commands = serverResponse.split(" ");
@@ -295,13 +266,6 @@ public class TCPClient {
                         break;
                 }
             }
-
-            // TODO Step 5: update this method, handle user-list response from the server
-            // Hint: In Step 5 reuse onUserList() method
-            // Hint for Step 7: call corresponding onXXX() methods which will notify all the listeners
-
-            // TODO Step 8: add support for incoming supported command list (type: supported)
-
         }
     }
 
