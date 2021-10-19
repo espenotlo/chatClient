@@ -179,9 +179,22 @@ public class TCPClient {
     /**
      * Send a request for the list of commands that server supports.
      */
-    public void askSupportedCommands() {
+    public String askSupportedCommands() {
         // TODO Step 8: Implement this method
         // Hint: Reuse sendCommand() method
+        String line = null;
+        if(isConnectionActive()) {
+            this.toServer.println("help");
+            try {
+                if (this.fromServer.ready()) {
+                    line = this.fromServer.readLine();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return line;
     }
 
 
@@ -256,6 +269,9 @@ public class TCPClient {
                         break;
                     case "privmsg":
                         onMsgReceived(true, commands[1], parseMessage(commands));
+                        break;
+                    case "msgok" :
+                        //do nothing
                         break;
                     case "msgerr":
                         onMsgError(parseCommand(commands));
